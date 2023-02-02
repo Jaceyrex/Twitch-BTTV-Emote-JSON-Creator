@@ -1,14 +1,19 @@
 ﻿using System;
 using System.Linq;
 using Newtonsoft.Json;
+using Microsoft.WindowsAPICodePack.Shell;
 
+//Creates new list
 List<TwitchEmoteMetaData> EmoteMetaDataList = new List<TwitchEmoteMetaData>();
 
+//Setting uri's using secret variables stored elsewhere.
 string twitchGlobalUri = $"https://api.twitch.tv/helix/chat/emotes/global";
 string twitchChannelUri = $"https://api.twitch.tv/helix/chat/emotes?broadcaster_id={Secrets.broadcaster_id}";
 string BTTVGlobalUri = $"https://api.betterttv.net/3/cached/emotes/global";
 string BTTVChannelUri = $"https://api.betterttv.net/3/cached/users/twitch/{Secrets.BTTV_id}";
 
+
+//does the GET requests for all emote information
 await TwitchGetRequest(twitchGlobalUri);
 await TwitchGetRequest(twitchChannelUri);
 await BTTVGlobalGetRequest(BTTVGlobalUri);
@@ -17,16 +22,44 @@ await BTTVChannelGetRequest(BTTVChannelUri);
 //Outputs title heading before ouputting all emote data.
 Console.WriteLine($"Emote metadata for {EmoteMetaDataList.Count} emotes");
 
-
+//Prints the metadata 
 for (int i = 0; i < EmoteMetaDataList.Count; i++)
 {
     Console.WriteLine($"{i}\t| Emote: {EmoteMetaDataList[i].name,25} \t| Animated: {EmoteMetaDataList[i].isGIF.ToString()} \t| URL: {EmoteMetaDataList[i].url} ");
 }
 
+//Serialises the list into a JSON format
+var serialisedList = JsonConvert.SerializeObject(EmoteMetaDataList, Formatting.Indented);
+
+//Gets downloads folder path (Seems to be the most sensible way to get it in case of updated / changed locations for folders)
+string downloadPath = KnownFolders.Downloads.Path;
+
+
+//Async writes the file to the download path and "nicely" prints location.
+await File.WriteAllTextAsync(downloadPath + "\\EmoteData.json", serialisedList);
+Console.WriteLine($"\n" +
+                        $"---------------------------------------------------------------------" +
+                        $"\nJSON has been saved to {downloadPath}\\EmoteData.json");
+
+//Gets the home path 
+static string GetHomePath()
+{
+    if (System.Environment.OSVersion.Platform == System.PlatformID.Unix)
+    {
+        return System.Environment.GetEnvironmentVariable("HOME");
+    }
+
+    return System.Environment.ExpandEnvironmentVariables("%HOMEDRIVE%%HOMEPATH%");
+}
+
+//Twitch GET request
 async Task TwitchGetRequest(string uri)
 {
+
+    //Creates a new temporary emote list to store gathered emote metadata
     List<TwitchEmoteMetaData> tempEmoteList = new List<TwitchEmoteMetaData>();
 
+    //creates a new HTTP Client
     var client = new HttpClient();
 
     try
@@ -35,13 +68,17 @@ async Task TwitchGetRequest(string uri)
         client.DefaultRequestHeaders.Add("Authorization", "Bearer " + Secrets.OAUTH_TOKEN_NO_PREFIX);
         client.DefaultRequestHeaders.Add("Client-Id", Secrets.client_id);
 
+        //Waits for response from the GET request
         HttpResponseMessage response = await client.GetAsync(uri);
         response.EnsureSuccessStatusCode();
 
+        //Sets a string to be the contents of the response
         string responseBody = await response.Content.ReadAsStringAsync();
 
+        //Creates object from the GET response
         var result = JsonConvert.DeserializeObject<TwitchRootobject>(responseBody);
 
+        //Sets temp list data based on retrieved data
         tempEmoteList = result.data
                     .Select(data => new TwitchEmoteMetaData
                     {
@@ -50,6 +87,7 @@ async Task TwitchGetRequest(string uri)
                         url = data.images.url_4x,
                     }).ToList();
 
+        //Ensures format of the image is correct (as Twitch API response doesn't include file format, only whether it's animated or static)
         for (int i = 0; i < tempEmoteList.Count; i++)
         {
             if (tempEmoteList[i].isGIF == false)
@@ -61,11 +99,11 @@ async Task TwitchGetRequest(string uri)
                 tempEmoteList[i].format = "gif";
 
                 //Replaces the static portion of URL (Thank you Twitch Madge) with default
-                //tempEmoteList[i].url.Replace("static", "default");
                 string[] urlArray = tempEmoteList[i].url.Split('/');
 
                 for (int j = 0; j < urlArray.Length; j++)
                 {
+                    //replaces static with default for animated emotes (URL will only show animated version when NOT set to static, then rejoins the string as a URL
                     if (urlArray[j] == "static")
                     {
                         urlArray[j] = "default";
@@ -74,11 +112,9 @@ async Task TwitchGetRequest(string uri)
                     }
                 }
             }
-
-            //Cannot be used on Twitch emotes as there isn't a fallback
-            //tempEmoteList[i].url = $"{tempEmoteList[i].url}.{tempEmoteList[i].format}";
         }
 
+        //Adds temporary emotes to the full list of emote metadata.
         EmoteMetaDataList.AddRange(tempEmoteList);
 
     }
@@ -91,19 +127,25 @@ async Task TwitchGetRequest(string uri)
 
 async Task BTTVGlobalGetRequest(string uri)
 {
+    //Creates a new temporary emote list to store gathered emote metadata
     List<TwitchEmoteMetaData> tempEmoteList = new List<TwitchEmoteMetaData>();
 
+    //creates a new HTTP Client
     var client = new HttpClient();
 
     try
     {
+        //Waits for response from the GET request
         HttpResponseMessage response = await client.GetAsync(uri);
         response.EnsureSuccessStatusCode();
 
+        //Sets a string to be the contents of the response
         string responseBody = await response.Content.ReadAsStringAsync();
 
+        //Creates object from the GET response
         var result = JsonConvert.DeserializeObject<Emote[]>(responseBody);
 
+        //Sets temp list data based on retrieved data
         tempEmoteList = result
                         .Select(emotes => new TwitchEmoteMetaData
                         {
@@ -113,15 +155,7 @@ async Task BTTVGlobalGetRequest(string uri)
                             url = $"https://cdn.betterttv.net/emote/{emotes.id}/3x.{emotes.imageType}" //Using PNG to avoid issues with webp in Unity, for animated emotes this gets replaced with .gif
                         }).ToList();
 
-        //replaced .png with .gif if emote is animated (may not work in final program with .webp conversion)
-        for (int i = 0; i < tempEmoteList.Count; i++)
-        {
-            if (tempEmoteList[i].isGIF)
-            {
-                tempEmoteList[i].url.Replace(".png", ".gif");
-            }
-        }
-
+        //Adds temporary emotes to the full list of emote metadata.
         EmoteMetaDataList.AddRange(tempEmoteList);
     }
     catch (HttpRequestException e)
@@ -133,36 +167,35 @@ async Task BTTVGlobalGetRequest(string uri)
 
 async Task BTTVChannelGetRequest(string uri)
 {
+    //Creates a new temporary emote list to store gathered emote metadata
     List<TwitchEmoteMetaData> tempEmoteList = new List<TwitchEmoteMetaData>();
 
+    //creates a new HTTP Client
     var client = new HttpClient();
 
     try
     {
+        //Waits for response from the GET request
         HttpResponseMessage response = await client.GetAsync(uri);
         response.EnsureSuccessStatusCode();
 
+        //Sets a string to be the contents of the response
         string responseBody = await response.Content.ReadAsStringAsync();
 
+        //Creates object from the GET response
         var result = JsonConvert.DeserializeObject<BTTVChannelRootobject>(responseBody);
 
+        //Sets temp list data based on retrieved data
         tempEmoteList = result.sharedEmotes
                         .Select(emotes => new TwitchEmoteMetaData
                         {
                             isGIF = emotes.animated,
+                            format = emotes.imageType,
                             name = emotes.code,
-                            url = $"https://cdn.betterttv.net/emote/{emotes.id}/3x.png" //Using PNG to avoid issues with webp in Unity, for animated emotes this gets replaced with .gif
+                            url = $"https://cdn.betterttv.net/emote/{emotes.id}/3x.{emotes.imageType}" //Using PNG to avoid issues with webp in Unity, for animated emotes this gets replaced with .gif
                         }).ToList();
 
-        //replaced .png with .gif if emote is animated (may not work in final program with .webp conversion)
-        for (int i = 0; i < tempEmoteList.Count; i++)
-        {
-            if (tempEmoteList[i].isGIF)
-            {
-                tempEmoteList[i].url.Replace(".png", ".gif");
-            }
-        }
-
+        //Adds temporary emotes to the full list of emote metadata.
         EmoteMetaDataList.AddRange(tempEmoteList);
     }
     catch (HttpRequestException e)
