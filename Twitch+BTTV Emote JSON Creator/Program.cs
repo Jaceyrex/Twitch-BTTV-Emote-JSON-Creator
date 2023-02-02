@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Newtonsoft.Json;
 
 List<TwitchEmoteMetaData> EmoteMetaDataList = new List<TwitchEmoteMetaData>();
@@ -8,16 +9,10 @@ string twitchChannelUri = $"https://api.twitch.tv/helix/chat/emotes?broadcaster_
 string BTTVGlobalUri = $"https://api.betterttv.net/3/cached/emotes/global";
 string BTTVChannelUri = $"https://api.betterttv.net/3/cached/users/twitch/{Secrets.BTTV_id}";
 
-//Task TwitchGlobal = TwitchGetRequest(twitchGlobalUri);
-//Task TwitchChannel = TwitchGetRequest(twitchChannelUri);
-Task BTTVGlobal = BTTVGlobalGetRequest(BTTVGlobalUri);
-Task BTTVShared = BTTVChannelGetRequest(BTTVChannelUri);
-
-//Waits for all tasks to finish to ensure list is filled
-//TwitchGlobal.Wait();
-//TwitchChannel.Wait();
-BTTVGlobal.Wait();
-BTTVShared.Wait();
+await TwitchGetRequest(twitchGlobalUri);
+await TwitchGetRequest(twitchChannelUri);
+await BTTVGlobalGetRequest(BTTVGlobalUri);
+await BTTVChannelGetRequest(BTTVChannelUri);
 
 //Outputs title heading before ouputting all emote data.
 Console.WriteLine($"Emote metadata for {EmoteMetaDataList.Count} emotes");
@@ -25,7 +20,7 @@ Console.WriteLine($"Emote metadata for {EmoteMetaDataList.Count} emotes");
 
 for (int i = 0; i < EmoteMetaDataList.Count; i++)
 {
-    Console.WriteLine($"{i} | Emote: {EmoteMetaDataList[i].name} | URL: {EmoteMetaDataList[i].url} | Animated: {EmoteMetaDataList[i].isGIF.ToString()}");
+    Console.WriteLine($"{i}\t| Emote: {EmoteMetaDataList[i].name,25} \t| Animated: {EmoteMetaDataList[i].isGIF.ToString()} \t| URL: {EmoteMetaDataList[i].url} ");
 }
 
 async Task TwitchGetRequest(string uri)
@@ -40,7 +35,7 @@ async Task TwitchGetRequest(string uri)
         client.DefaultRequestHeaders.Add("Authorization", "Bearer " + Secrets.OAUTH_TOKEN_NO_PREFIX);
         client.DefaultRequestHeaders.Add("Client-Id", Secrets.client_id);
 
-        HttpResponseMessage response = await client.GetAsync(twitchGlobalUri);
+        HttpResponseMessage response = await client.GetAsync(uri);
         response.EnsureSuccessStatusCode();
 
         string responseBody = await response.Content.ReadAsStringAsync();
@@ -55,8 +50,36 @@ async Task TwitchGetRequest(string uri)
                         url = data.images.url_4x,
                     }).ToList();
 
-        EmoteMetaDataList.AddRange(tempEmoteList);
+        for (int i = 0; i < tempEmoteList.Count; i++)
+        {
+            if (tempEmoteList[i].isGIF == false)
+            {
+                tempEmoteList[i].format = "png";
+            }
+            else if (tempEmoteList[i].isGIF == true)
+            {
+                tempEmoteList[i].format = "gif";
 
+                //Replaces the static portion of URL (Thank you Twitch Madge) with default
+                //tempEmoteList[i].url.Replace("static", "default");
+                string[] urlArray = tempEmoteList[i].url.Split('/');
+
+                for (int j = 0; j < urlArray.Length; j++)
+                {
+                    if (urlArray[j] == "static")
+                    {
+                        urlArray[j] = "default";
+                        tempEmoteList[i].url = String.Join("/", urlArray);
+                        
+                    }
+                }
+            }
+
+            //Cannot be used on Twitch emotes as there isn't a fallback
+            //tempEmoteList[i].url = $"{tempEmoteList[i].url}.{tempEmoteList[i].format}";
+        }
+
+        EmoteMetaDataList.AddRange(tempEmoteList);
 
     }
     catch (HttpRequestException e)
@@ -74,19 +97,20 @@ async Task BTTVGlobalGetRequest(string uri)
 
     try
     {
-        HttpResponseMessage response = await client.GetAsync(twitchGlobalUri);
+        HttpResponseMessage response = await client.GetAsync(uri);
         response.EnsureSuccessStatusCode();
 
         string responseBody = await response.Content.ReadAsStringAsync();
 
-        var result = JsonConvert.DeserializeObject<BTTVGlobalEmotesRoot>(responseBody);
+        var result = JsonConvert.DeserializeObject<Emote[]>(responseBody);
 
-        tempEmoteList = result.emotes
+        tempEmoteList = result
                         .Select(emotes => new TwitchEmoteMetaData
                         {
                             isGIF = emotes.animated,
+                            format = emotes.imageType,
                             name = emotes.code,
-                            url = $"https://cdn.betterttv.net/emote/{emotes.id}/3x.png" //Using PNG to avoid issues with webp in Unity, for animated emotes this gets replaced with .gif
+                            url = $"https://cdn.betterttv.net/emote/{emotes.id}/3x.{emotes.imageType}" //Using PNG to avoid issues with webp in Unity, for animated emotes this gets replaced with .gif
                         }).ToList();
 
         //replaced .png with .gif if emote is animated (may not work in final program with .webp conversion)
@@ -115,14 +139,14 @@ async Task BTTVChannelGetRequest(string uri)
 
     try
     {
-        HttpResponseMessage response = await client.GetAsync(twitchGlobalUri);
+        HttpResponseMessage response = await client.GetAsync(uri);
         response.EnsureSuccessStatusCode();
 
         string responseBody = await response.Content.ReadAsStringAsync();
 
         var result = JsonConvert.DeserializeObject<BTTVChannelRootobject>(responseBody);
 
-        tempEmoteList = result.emotes
+        tempEmoteList = result.sharedEmotes
                         .Select(emotes => new TwitchEmoteMetaData
                         {
                             isGIF = emotes.animated,

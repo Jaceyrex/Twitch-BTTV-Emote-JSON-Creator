@@ -1,17 +1,17 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 
 [Serializable]
-public class BTTVGlobalEmotesRoot
+public class BTTVGlobalRootobject
 {
-    public BTTVGlobalEmote[] emotes;
+    public Emote[] Emotes { get; set; }
 }
 
 [Serializable]
-public class BTTVGlobalEmote
+public class Emote
 {
-    public string id;
-    public string code;
-    public bool animated;
-
+    public string id { get; set; }
+    public string code { get; set; }
+    public string imageType { get; set; }
+    public bool animated { get; set; }
 }
-

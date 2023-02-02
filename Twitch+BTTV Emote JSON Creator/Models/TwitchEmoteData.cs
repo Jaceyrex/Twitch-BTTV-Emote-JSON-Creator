@@ -28,4 +28,6 @@
         public string url { get; set; }
 
         public bool isGIF { get; set; }
+
+        public string format { get; set; }
     }

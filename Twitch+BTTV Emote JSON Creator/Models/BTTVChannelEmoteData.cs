@@ -1,15 +1,17 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 
 [Serializable]
 public class BTTVChannelRootobject
 {
-    public SharedEmote[] emotes;
+    public Sharedemote[] sharedEmotes { get; set; }
 }
 
 [Serializable]
-public class SharedEmote
+public class Sharedemote
 {
-    public string id;
-    public string code;
-    public bool animated;
+    public string id { get; set; }
+    public string code { get; set; }
+    public string imageType { get; set; }
+    public bool animated { get; set; }
 }
