@@ -8,9 +8,6 @@ string twitchChannelUri = $"https://api.twitch.tv/helix/chat/emotes?broadcaster_
 string BTTVGlobalUri = $"https://api.betterttv.net/3/cached/emotes/global";
 string BTTVChannelUri = $"https://api.betterttv.net/3/cached/users/twitch/{Secrets.BTTV_id}";
 
-//Creates HTTP client
-var client = new HttpClient();
-
 //Task TwitchGlobal = TwitchGetRequest(twitchGlobalUri);
 //Task TwitchChannel = TwitchGetRequest(twitchChannelUri);
 Task BTTVGlobal = BTTVGlobalGetRequest(BTTVGlobalUri);
