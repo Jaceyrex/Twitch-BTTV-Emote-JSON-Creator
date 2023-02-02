@@ -1,0 +1,1 @@
+# Twitch+BTTV Emote JSON Creator
