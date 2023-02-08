@@ -55,7 +55,7 @@ partial class Program
                 correctResponse = true;
                 var emoteVerificationService = new DownloadVerificationService();
 
-                emoteVerificationService.VerifyEmotes();
+                await emoteVerificationService.VerifyEmotes();
             }
             if (response == "N")
             {
