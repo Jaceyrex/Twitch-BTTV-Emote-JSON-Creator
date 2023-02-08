@@ -18,7 +18,7 @@ namespace Twitch_BTTV_Emote_JSON_Creator
 
         //TODO: Tie each emote to a bool for if it exists or not, false by default - true if it exists with the emotes in the directory. Then go through and list all the ones that are false.
         
-        public async Task VerifyEmotes()
+        public void VerifyEmotes()
         {
             Console.WriteLine("Verifying emotes....");
 
@@ -89,7 +89,8 @@ namespace Twitch_BTTV_Emote_JSON_Creator
                     Console.WriteLine($"{emoteKVP[i].Key}");
                 }
             }
-            Console.WriteLine($"Total missing emotes: {totalMissing}");
+            Console.WriteLine($"Total missing emotes: {totalMissing}\n" +
+                $"Consider manually downloading these emotes, as there has been an issue when attempting to download them previously.");
             //for (int i = 0; i < missingEmotes.Count; i++)
             //{
             //    Console.WriteLine($"{missingEmotes[i]}");
@@ -102,83 +103,60 @@ namespace Twitch_BTTV_Emote_JSON_Creator
             {
                 Console.WriteLine($"reverting {{lessThan}} to < in {fileName}");
                 fileName = fileName.Replace("{lessThan}", "<");
-                fileName = fileName.Replace(".png", "");
-                fileName = fileName.Replace(".gif", "");
-                fileName = fileName.Replace($"{directory}\\", "");
 
             }
             if (fileName.Contains("{greaterThan}"))
             {
                 Console.WriteLine($"reverting {{greaterThan}} to > in {fileName}");
                 fileName = fileName.Replace("{greaterThan}", ">");
-                fileName = fileName.Replace(".png", "");
-                fileName = fileName.Replace(".gif", "");
-                fileName = fileName.Replace($"{directory}\\", "");
 
             }
             if (fileName.Contains("{colon}"))
             {
                 Console.WriteLine($"reverting {{colon}} to : in {fileName}");
                 fileName = fileName.Replace("{colon}", ":");
-                fileName = fileName.Replace(".png", "");
-                fileName = fileName.Replace(".gif", "");
-                fileName = fileName.Replace($"{directory}\\", "");
 
             }
             if (fileName.Contains("{doubleQuote}"))
             {
                 Console.WriteLine($"reverting {{doubleQuote}} to double quotes in {fileName}");
                 fileName = fileName.Replace("{doubleQuote}", @"""");
-                fileName = fileName.Replace(".png", "");
-                fileName = fileName.Replace(".gif", "");
-                fileName = fileName.Replace($"{directory}\\", "");
 
             }
             if (fileName.Contains("{forwardSlash}"))
             {
                 Console.WriteLine($"reverting {{forwardSlash}} to / in {fileName}");
                 fileName = fileName.Replace("{forwardSlash}", "/");
-                fileName = fileName.Replace(".png", "");
-                fileName = fileName.Replace(".gif", "");
-                fileName = fileName.Replace($"{directory}\\", "");
 
             }
             if (fileName.Contains("{backslash}"))
             {
                 Console.WriteLine($"reverting {{backslash}} to \\ in {fileName}");
                 fileName = fileName.Replace("{backslash}", @"\");
-                fileName = fileName.Replace(".png", "");
-                fileName = fileName.Replace(".gif", "");
-                fileName = fileName.Replace($"{directory}\\", "");
 
             }
             if (fileName.Contains("{pipe}"))
             {
                 Console.WriteLine($"reverting {{pipe}} to | in {fileName}");
                 fileName = fileName.Replace("{pipe}", "|");
-                fileName = fileName.Replace(".png", "");
-                fileName = fileName.Replace(".gif", "");
-                fileName = fileName.Replace($"{directory}\\", "");
 
             }
             if (fileName.Contains("{questionMark}"))
             {
                 Console.WriteLine($"reverting {{questionMark}} to ? in {fileName}");
                 fileName = fileName.Replace("{questionMark}", "?");
-                fileName = fileName.Replace(".png", "");
-                fileName = fileName.Replace(".gif", "");
-                fileName = fileName.Replace($"{directory}\\", "");
 
             }
             if (fileName.Contains("{asterisk}"))
             {
                 Console.WriteLine($"reverting {{asterisk}} to * in {fileName}");
                 fileName = fileName.Replace("{asterisk}", "*");
-                fileName = fileName.Replace(".png", "");
-                fileName = fileName.Replace(".gif", "");
-                fileName = fileName.Replace($"{directory}\\", "");
 
             }
+
+            fileName = fileName.Replace(".png", "");
+            fileName = fileName.Replace(".gif", "");
+            fileName = fileName.Replace($"{directory}\\", "");
 
             return fileName;
         }

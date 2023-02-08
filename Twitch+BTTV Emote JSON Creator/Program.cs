@@ -28,11 +28,10 @@ partial class Program
             else if (response == "N")
             {
                 correctResponse = true;
-                //var emoteDownloaderService = new EmoteDownloaderService();
+                var emoteDownloaderService = new EmoteDownloaderService();
 
-                //await emoteDownloaderService.DownloadEmotesFromJSON();
-
-                
+                await emoteDownloaderService.DownloadEmotesFromJSON();
+            
             }
             else
             {
@@ -55,7 +54,7 @@ partial class Program
                 correctResponse = true;
                 var emoteVerificationService = new DownloadVerificationService();
 
-                await emoteVerificationService.VerifyEmotes();
+                emoteVerificationService.VerifyEmotes();
             }
             if (response == "N")
             {
