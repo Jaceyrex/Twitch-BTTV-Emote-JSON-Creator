@@ -27,10 +27,33 @@ partial class Program
             }
             else if (response == "N")
             {
-                correctResponse = true;
-                var emoteDownloaderService = new EmoteDownloaderService();
+                correctResponse = false; // False due to requesting answer to the next question
 
-                await emoteDownloaderService.DownloadEmotesFromJSON();
+                while (!correctResponse)
+                {
+                    Console.WriteLine("Do you want to download or redownload the emotes?");
+
+                    response = Console.ReadLine().ToUpper();
+
+                    if (response == "Y")
+                    {
+                        correctResponse = true;
+
+                        var emoteDownloaderService = new EmoteDownloaderService();
+
+                        await emoteDownloaderService.DownloadEmotesFromJSON();
+                    }
+                    else if (response == "N")
+                    {
+                        correctResponse = true;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Incorrect answer, Y or N response required.\n");
+                    }
+
+                }
+
             
             }
             else
